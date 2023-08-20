@@ -6,17 +6,36 @@ import (
 
 //adding in UPDATE
 
-func UpdateVoterByID(id uint, firstName, lastName string, voterList VoterList) error {
-	voter, exists := voterList.Voters[id]
+func UpdateVoterByID(id uint, firstName, lastName string, voterList *VoterList) error {
+	voterIndex, exists := findVoterIndexByID(id, voterList)
 	if !exists {
 		return fmt.Errorf("voter not found")
 	}
 
-	voter.FirstName = firstName
-	voter.LastName = lastName
-	voterList.Voters[id] = voter
+	voterList.Voters[voterIndex].FirstName = firstName
+	voterList.Voters[voterIndex].LastName = lastName
 
 	return nil
+}
+
+func findVoterIndexByID(id uint, voterList *VoterList) (int, bool) {
+	for i, voter := range voterList.Voters {
+		if voter.VoterID == id {
+			return i, true
+		}
+	}
+	return -1, false
+}
+
+type HealthData struct {
+	BootTime              time.Time `json:"bootTime"`
+	TotalAPICalls         int       `json:"totalApiCalls"`
+	TotalAPICallsWithError int       `json:"totalApiErrors"`
+}
+
+type VoterList struct {
+	Voters    []Voter      
+	HealthData HealthData 
 }
 
 // Adding in DELETE:
@@ -101,4 +120,11 @@ func GetVoterPollByID(voterID, pollID uint, voterList VoterList) (voterPoll, err
 		}
 	}
 	return voterPoll{}, fmt.Errorf("poll not found for this voter")
+}
+
+func NewVoterList() *VoterList {
+	return &VoterList{
+		Voters:    make([]Voter, 0),
+		HealthData: InitializeHealth(),
+	}
 }
