@@ -4,6 +4,32 @@ import (
 	"time"
 )
 
+//adding in UPDATE
+
+func UpdateVoterByID(id uint, firstName, lastName string, voterList VoterList) error {
+	voter, exists := voterList.Voters[id]
+	if !exists {
+		return fmt.Errorf("voter not found")
+	}
+
+	voter.FirstName = firstName
+	voter.LastName = lastName
+	voterList.Voters[id] = voter
+
+	return nil
+}
+
+// Adding in DELETE:
+func DeleteVoterByID(id uint, voterList VoterList) error {
+	_, exists := voterList.Voters[id]
+	if !exists {
+		return fmt.Errorf("voter not found")
+	}
+
+	delete(voterList.Voters, id)
+	return nil
+}
+
 // Function to create a new unique voter 
 
 func CreateNewVoter(voterID uint, firstName, lastName string) Voter {
