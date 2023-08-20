@@ -1,30 +1,21 @@
 package main
-import "time"
+import (
+	"time"
+)
 
-//initialize health information
-
-func InitializeHealth() HealthData{
+//initialize the health data
+func InitializeHealth() HealthData {
 	return HealthData{
-		BootTime:           time.Now(),
-		TotalAPICalls:      0,
+		BootTime:              time.Now(),
+		TotalAPICalls:         0,
 		TotalAPICallsWithError: 0,
 	}
 }
 
-//update total API calls
-func UpdateTotalAPICalls(healthData *HealthData) {
+func IncrementTotalAPICalls(healthData *HealthData) {
 	healthData.TotalAPICalls++
 }
 
-//update total API calls with errors
-func UpdateTotalAPICallsWithError(healthData *HealthData) {
+func IncrementTotalAPICallsWithError(healthData *HealthData) {
 	healthData.TotalAPICallsWithError++
 }
-
-//struct for Health Data
-type HealthData struct {
-	BootTime           time.Time `json:"bootTime"`
-	TotalAPICalls      int       `json:"totalApiCalls"`
-	TotalAPICallsWithError int    `json:"totalApiErrors"`
-}
-
