@@ -7,10 +7,12 @@ import (
 )
 
 //handling GET /voters/health
-func handleHealthCheck(w http.ResponseWriter, r *http.Request, voterList VoterList) {
-	healthData := voterList.HealthData
+func handleHealthCheck(w http.ResponseWriter, r *http.Request, voterList *VoterList) {
+	voterList.HealthData.TotalAPICalls++
+	uptimeDuration := time.Since(voterList.HealthData.BootTime)
+	voterList.HealthData.Uptime = uptimeDuration.String()
 
-	respondWithJSON(w, http.StatusOK, healthData)
+	respondWithJSON(w, http.StatusOK, voterList.HealthData)
 }
 
 //responding with JSON
@@ -20,4 +22,6 @@ func respondWithJSON(w http.ResponseWriter, statusCode int, data interface{}) {
 	w.WriteHeader(statusCode)
 	json.NewEncoder(w).Encode(data)
 }
+
+
 
