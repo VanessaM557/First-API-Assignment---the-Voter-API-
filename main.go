@@ -3,17 +3,16 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"time"
 )
 
-// main function
 func main() {
 	// Initializing the VoterList
 	voterList := NewVoterList()
 
-  // handeling for route /voters
-  
+	//Switch to choose between methods of GET and POST
+	
 	http.HandleFunc("/voters", func(w http.ResponseWriter, r *http.Request) {
-    //switch statements  for GET and POST Request methods
 		switch r.Method {
 		case http.MethodGet:
 			handleGetAllVoters(w, r, voterList)
@@ -24,7 +23,7 @@ func main() {
 		}
 	})
 
-  http.HandleFunc("/voters/", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/voters/", func(w http.ResponseWriter, r *http.Request) {
 		handleGetVoterByID(w, r, voterList)
 	})
 
@@ -36,6 +35,34 @@ func main() {
 		handleGetVoterPollByID(w, r, voterList)
 	})
 
+	//incorporating extra credit of PUT/DELETE
+	
+	http.HandleFunc("/voters/:id", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			handleGetVoterByID(w, r, voterList)
+		case http.MethodPut:
+			handleUpdateVoterByID(w, r, voterList)
+		case http.MethodDelete:
+			handleDeleteVoterByID(w, r, voterList)
+		default:
+			http.Error(w, "Method is not allowed", http.StatusMethodNotAllowed)
+		}
+	})
+
+	http.HandleFunc("/voters/:id/polls/:pollid", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			handleGetVoterPollByID(w, r, voterList)
+		case http.MethodPut:
+			handleUpdateVoterPollByID(w, r, voterList)
+		case http.MethodDelete:
+			handleDeleteVoterPollByID(w, r, voterList)
+		default:
+			http.Error(w, "Method is not allowed", http.StatusMethodNotAllowed)
+		}
+	})
+
 	http.HandleFunc("/voters/health", func(w http.ResponseWriter, r *http.Request) {
 		handleHealthCheck(w)
 	})
@@ -44,3 +71,4 @@ func main() {
 	fmt.Printf("Server listening on port %d...\n", port)
 	http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
 }
+
