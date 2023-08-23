@@ -1,5 +1,4 @@
-# First-API-Assignment---the-Voter-API
+# LAB
 
-Based of the ToDo code here is my voter API code. 
+Creating this seperate branch as I did submi the first API assignment extremely late and am not sure if it will get accepted.
 
-NOTE: I was going to work on this and submit and slowly forgot after it was late so here is my attempt regardless if it is accepted or not.
