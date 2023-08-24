@@ -1,130 +1,106 @@
 package main
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/go-redis/redis/v8"
 	"time"
 )
 
 //adding in UPDATE
 
-func UpdateVoterByID(id uint, firstName, lastName string, voterList *VoterList) error {
-	voterIndex, exists := findVoterIndexByID(id, voterList)
-	if !exists {
-		return fmt.Errorf("voter not found")
+func (id string, firstName, lastName string) error {
+	voterIndex, exists := rdb.Get(context, "voter:"+id).Result()
+	if err == redis.Nil{
+		return fmt.Errorf("voter cannot be found")
+	}
+        
+	else if err != nil {
+		return err
 	}
 
-	voterList.Voters[voterIndex].FirstName = firstName
-	voterList.Voters[voterIndex].LastName = lastName
+	var voter Voter
 
+	err = json.Unmarshal([]byte(voterJSON), &voter)
+	if err != nil {
+		return err
+	}
+	
+	voter.Name = firstName + " " + lastName
+	voterJSON, err = json.Marshal(voter)
+	
+	if err != nil {
+		return err
+	}
+
+	err = rdb.Set(ctx, "voter:"+id, voterJSON, 0).Err()
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
-func findVoterIndexByID(id uint, voterList *VoterList) (int, bool) {
-	for i, voter := range voterList.Voters {
-		if voter.VoterID == id {
-			return i, true
-		}
-	}
-	return -1, false
-}
-
-type HealthData struct {
-	BootTime              time.Time `json:"bootTime"`
-	TotalAPICalls         int       `json:"totalApiCalls"`
-	TotalAPICallsWithError int       `json:"totalApiErrors"`
-}
-
-type VoterList struct {
-	Voters    []Voter      
-	HealthData HealthData 
-}
-
 // Adding in DELETE:
-func DeleteVoterByID(id uint, voterList VoterList) error {
-	_, exists := voterList.Voters[id]
-	if !exists {
-		return fmt.Errorf("voter not found")
+func DeleteVoterByID(id string) error{
+	err := rdb.Del(context , "voter:"+id).Err()
+	if err != nil {
+		return fmt.Errorf("error deleting voter: %v", err)
 	}
-
-	delete(voterList.Voters, id)
 	return nil
 }
 
 // Function to create a new unique voter 
 
-func CreateNewVoter(voterID uint, firstName, lastName string) Voter {
-	return Voter{
-		VoterID:     voterID,
-		FirstName:   firstName,
-		LastName:    lastName,
-		VoteHistory: make([]voterPoll, 0),
+func CreateNewVoter(id, name string) (Voter, error){
+	voter := Voter{
+		ID:   id,
+		Name: name,
 	}
-}
-
-// retrieving voters
-
-func GetAllVoters(voterList VoterList) []Voter {
-	voters := make([]Voter, 0, len(voterList.Voters))
-	for _, voter := range voterList.Voters {
-		voters = append(voters, voter)
+	voterJSON, err := json.Marshal(voter)
+	if err != nil {
+		return Voter{}, err
 	}
-	return voters
-}
-
-//to record a vote for a specific voter 
-
-func RecordVote(voterID, pollID uint, voteDate time.Time, voterList VoterList) error {
-	voter, exists := voterList.Voters[voterID]
-	if !exists {
-		return fmt.Errorf("voter cannot be found")
-	}
-	vote := voterPoll{
-		PollID:   pollID,
-		VoteDate: voteDate,
-	}
-	voter.VoteHistory = append(voter.VoteHistory, vote)
-	voterList.Voters[voterID] = voter
-
-	return nil
-}
-
-//retrieving voter by ID
-func GetVoterByID(id uint, voterList VoterList) (Voter, error) {
-	voter, exists := voterList.Voters[id]
-	if !exists {
-		return Voter{}, fmt.Errorf("voter cannot be found")
+	err = rdb.Set(context, "voter:"+id, voterJSON, 0).Err()
+	if err != nil {
+		return Voter{}, err
 	}
 	return voter, nil
 }
 
-//retrieving voter history by ID
+// retrieving voters
 
-func GetVoterPollsByID(id uint, voterList VoterList) ([]voterPoll, error) {
-	voter, exists := voterList.Voters[id]
-	if !exists {
-		return nil, fmt.Errorf("voter cannot be found")
+func GetAllVoters()([]Voter, error){
+	voterKeys, err := rdb.Keys(context, "voter:*").Result()
+	if err != nil {
+		return nil, err
 	}
-	return voter.VoteHistory, nil
-}
-
-// retrieving vote with voter ID and poll ID
-
-func GetVoterPollByID(voterID, pollID uint, voterList VoterList) (voterPoll, error) {
-	voter, exists := voterList.Voters[voterID]
-	if !exists {
-		return voterPoll{}, fmt.Errorf("voter cannot be found")
-	}
-
-	for _, vote := range voter.VoteHistory {
-		if vote.PollID == pollID {
-			return vote, nil
+	voters := []Voter{}
+	for _, key := range voterKeys {
+		voterJSON, err := rdb.Get(context, key).Result()
+		if err != nil {
+			return nil, err
 		}
+		var voter Voter
+		err = json.Unmarshal([]byte(voterJSON), &voter)
+		if err != nil {
+			return nil, err
+		}
+		voters = append(voters, voter)
 	}
-	return voterPoll{}, fmt.Errorf("poll not found for this voter")
+	return voters, nil
 }
 
-func NewVoterList() *VoterList {
-	return &VoterList{
-		Voters:    make([]Voter, 0),
-		HealthData: InitializeHealth(),
+//retrieving voter by ID
+func GetVoterByID(id string) (Voter, error) {
+	voterJSON, err := rdb.Get(context, "voter:"+id).Result()
+	if err == redis.Nil {
+		return Voter{}, fmt.Errorf("voter not found")
+	} else if err != nil {
+		return Voter{}, err
 	}
+	var voter Voter
+	err = json.Unmarshal([]byte(voterJSON), &voter)
+	if err != nil {
+		return Voter{}, err
+	}
+	return voter, nil
 }
